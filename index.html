@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phenix 1929 Holdings — EBITDA to Free Cash Flow Bridge</title>
+<style>
+  :root{
+    --navy:#16233f; --navy2:#223357; --steel:#4a6fa5; --pos:#1f8a5c; --neg:#c0392b;
+    --bg:#f3f5f9; --card:#ffffff; --line:#e1e6ee; --sub:#6b7789; --ink:#1a2233;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 22px 40px;}
+  h1{font-size:20px;margin:0 0 3px;color:var(--navy);}
+  .sub1{font-size:13px;color:var(--sub);margin-bottom:18px;}
+  .controls{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;}
+  .ctrl-group{display:flex;flex-direction:column;gap:6px;}
+  .ctrl-group.disabled{opacity:.4;}
+  .ctrl-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);font-weight:600;}
+  .pills{display:flex;gap:6px;}
+  .pill{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--ink);transition:.15s;}
+  .pill.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  select{border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;background:#fff;color:var(--ink);}
+  select:disabled{background:#f1f2f5;color:#a3a9b3;cursor:not-allowed;}
+  .reset{font-size:12px;color:var(--steel);cursor:pointer;text-decoration:underline;align-self:center;}
+  .kpis{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+  .kpi{flex:1;min-width:190px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;}
+  .kpi .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--sub);margin-bottom:6px;}
+  .kpi .val{font-size:22px;font-weight:650;color:var(--navy);}
+  .kpi .val.neg{color:var(--neg);}
+  .kpi .val.pos{color:var(--pos);}
+  .kpi .sub{font-size:12px;color:var(--sub);margin-top:2px;}
+  .section-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px 8px;margin-bottom:20px;}
+  .section-title{font-size:14px;font-weight:650;color:var(--navy);margin-bottom:2px;}
+  .section-desc{font-size:12px;color:var(--sub);margin-bottom:10px;}
+  .na-note{font-size:13px;color:var(--sub);padding:26px 10px;text-align:center;background:#f8f9fb;border:1px dashed var(--line);border-radius:8px;margin-bottom:10px;}
+  svg{width:100%;max-width:100%;height:auto;display:block;}
+  .bar{cursor:pointer;}
+  .bar.anchor{fill:var(--navy);}
+  .bar.pos{fill:var(--pos);}
+  .bar.neg{fill:var(--neg);}
+  .bar.zero{fill:#c8cdd6;}
+  .connector{stroke:#c3c9d3;stroke-width:1;stroke-dasharray:2,2;}
+  .axis-line{stroke:#c3c9d3;stroke-width:1;}
+  .cat-label{font-size:10.3px;fill:var(--sub);}
+  .cat-label.zero{fill:#b7bcc4;}
+  .val-label{font-size:10.5px;font-weight:600;fill:var(--ink);text-anchor:middle;}
+  .val-label.pos{fill:var(--pos);}
+  .val-label.neg{fill:var(--neg);}
+  .val-label.anchor{fill:var(--navy);}
+  .tooltip{position:absolute;background:var(--navy);color:#fff;font-size:12px;padding:7px 10px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .1s;max-width:220px;z-index:10;}
+  footer{font-size:11.5px;color:var(--sub);line-height:1.5;margin-top:8px;}
+  .chart-shell{position:relative;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Phenix 1929 Holdings — EBITDA to Free Cash Flow Bridge</h1>
+  <div class="sub1">$ in thousands &nbsp;&middot;&nbsp; Adjusted EBITDA &rarr; Unadjusted EBITDA &rarr; Free Cash Flow &nbsp;&middot;&nbsp; sourced live from the Adjusted / Unadjusted Trial Balance + uploaded balance sheets</div>
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <div class="ctrl-label">Entity</div>
+      <div class="pills" id="entityPills">
+        <div class="pill" data-entity="PCS">PCS</div>
+        <div class="pill" data-entity="PSSF">PSSF</div>
+        <div class="pill" data-entity="GP">GP</div>
+        <div class="pill" data-entity="ALL">All companies</div>
+      </div>
+    </div>
+    <div class="ctrl-group" id="companyGroup">
+      <div class="ctrl-label">Company (PCS only)</div>
+      <select id="companySelect"></select>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Period (2026)</div>
+      <select id="periodSelect">
+        <option value="TOTAL">Jan&ndash;May Total</option>
+        <option value="0">January</option>
+        <option value="1">February</option>
+        <option value="2">March</option>
+        <option value="3">April</option>
+        <option value="4">May</option>
+      </select>
+    </div>
+    <div class="reset" id="resetLink">Reset filters</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lbl">Adjusted EBITDA</div><div class="val" id="kpiAdj">&ndash;</div><div class="sub" id="kpiScope">&ndash;</div></div>
+    <div class="kpi"><div class="lbl">Unadjusted EBITDA</div><div class="val" id="kpiUnadj">&ndash;</div><div class="sub" id="kpiUnadjSub">cash basis, per statutory books</div></div>
+    <div class="kpi"><div class="lbl">Net Change in Cash</div><div class="val" id="kpiCash">&ndash;</div><div class="sub" id="kpiCashSub">&ndash;</div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">1 &middot; Adjusted EBITDA &rarr; Unadjusted EBITDA</div>
+    <div class="section-desc">Walks from management-adjusted EBITDA down to statutory (unadjusted) EBITDA by normalization category. OC = normalizations tied to Company-owned/managed locations (Co = "OC" on the trial balance), shown as one line since it spans several categories.</div>
+    <div class="chart-shell"><svg id="chart1"></svg></div>
+  </div>
+
+  <div class="section-card" id="section2card">
+    <div class="section-title">2 &middot; Unadjusted EBITDA &rarr; Free Cash Flow</div>
+    <div class="section-desc" id="section2desc">Walks from statutory EBITDA (cash basis) to the actual net change in cash, using month-end balance sheet deltas. Ties to the balance sheet to the dollar.</div>
+    <div id="section2na" class="na-note" style="display:none;"></div>
+    <div class="chart-shell" id="section2chartWrap"><svg id="chart2"></svg></div>
+  </div>
+
+  <footer id="footerNote"></footer>
+  <div class="tooltip" id="tooltip"></div>
+</div>
+
+<script>
+const RAW = {"months": ["Jan", "Feb", "Mar", "Apr", "May"], "sec1": {"PCS": {"AdjEBITDA": [162.25773000000154, 169.2543600000041, 483.8984000000063, 126.29602000000128, 550.4799600000084], "UnadjEBITDA": [93.45605000000023, 50.13783000000547, 396.2939100000065, 57.127649999999285, 468.67474999999877], "OCnorm": [-46.51948, -53.29973, -64.88944000000001, -36.520440000000015, -18.51199000000003], "buckets": {"Revenue": [0.0, 0.0, 3.568080000000009, 0.0, 0.0], "Occupancy": [0.0, 2.2737367544323206e-13, 2.2737367544323206e-13, 1.1368683772161603e-13, 2.2737367544323206e-13], "Payroll": [-0.08890000000000242, 0.0, 1.4210854715202004e-14, 1.4210854715202004e-14, 2.842170943040401e-14], "ProfLegal": [0.8964999999999925, -33.98491000000007, -0.3016899999999829, -1.8036799999999857, -17.591790000000067], "MgmtFees": [-18.45244000000001, -17.85720000000001, -17.85720000000001, -17.85720000000001, -17.85720000000001], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [-4.637360000001291, -13.974689999998802, -8.124240000000022, -12.987050000002117, -27.8442300000098], "CashInterest": [-709.59069, -12.04842, -11.81242, -11.629010000000001, -990.4447]}, "PSSF": {"AdjEBITDA": [362.11923999999993, 408.05991666666677, 263.1909900000001, 286.8002600000002, 262.1536600000001], "UnadjEBITDA": [153.75533999999993, 85.97677000000039, 79.16339000000005, -138.90262999999987, 112.91680999999998], "OCnorm": [-0.0, -0.0, -0.0, -0.0, -0.0], "buckets": {"Revenue": [0.7924000000000433, 0.7924000000002707, 0.7924000000000433, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [-14.417000000000002, -56.08366666666669, -10.25033000000002, -10.27688999999998, -7.000329999999963], "ProfLegal": [0.0, -65.11367, -58.86977000000001, -254.73532999999998, -34.889070000000004], "MgmtFees": [-115.73259999999999, -46.5003, -24.357300000000002, -115.7326, -24.357299999999988], "NDF": [1.5424799999999976, -21.560109999999995, -6.61981999999999, -16.64496000000001, -82.73233000000009], "FamilyReunion": [-32.663790000000006, -98.2378, -70.32277999999997, -25.74592000000004, -0.20264000000001398]}, "Other": [-47.88539000000003, -35.379999999999995, -14.400000000000091, -2.567190000000039, -0.05518000000009238], "CashInterest": [0.91174, 0.6019000000000001, 0.5118399999999999, 0.6516699999999999, 0.17046000000000003]}, "GP": {"AdjEBITDA": [3.74051, -1.7529899999999983, -2.1486699999999996, 4.027, 0.8991399999999987], "UnadjEBITDA": [3.74051, -1.7529899999999983, -2.1486699999999996, 4.027, 0.8991399999999987], "OCnorm": [-0.0, -0.0, -0.0, -0.0, -0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 0.0, 0.0, 0.0], "MgmtFees": [0.0, 0.0, 0.0, 0.0, 0.0], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [0.0, 0.0, 0.0, 0.0, 0.0], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "ALL": {"AdjEBITDA": [528.1174800000015, 575.5612866666709, 744.9407200000064, 417.12328000000144, 813.5327600000085], "UnadjEBITDA": [250.95190000000017, 134.36161000000584, 473.3086300000066, -77.7479800000006, 582.4906999999987], "OCnorm": [-46.51948, -53.29973, -64.88944000000001, -36.520440000000015, -18.51199000000003], "buckets": {"Revenue": [0.7924000000000433, 0.7924000000002707, 4.360480000000052, 0.0, 0.0], "Occupancy": [0.0, 2.2737367544323206e-13, 2.2737367544323206e-13, 1.1368683772161603e-13, 2.2737367544323206e-13], "Payroll": [-14.505900000000004, -56.08366666666669, -10.250330000000005, -10.276889999999966, -7.000329999999934], "ProfLegal": [0.8964999999999925, -99.09858000000007, -59.171459999999996, -256.53900999999996, -52.48086000000007], "MgmtFees": [-134.18504000000001, -64.35750000000002, -42.214500000000015, -133.58980000000003, -42.2145], "NDF": [1.5424799999999976, -21.560109999999995, -6.61981999999999, -16.64496000000001, -82.73233000000009], "FamilyReunion": [-32.663790000000006, -98.2378, -70.32277999999997, -25.74592000000004, -0.20264000000001398]}, "Other": [-52.522750000001324, -49.3546899999988, -22.524240000000113, -15.554240000002157, -27.899410000009894], "CashInterest": [-708.67895, -11.44652, -11.30058, -10.977340000000002, -990.27424]}}, "sec1_company": {"TX": {"AdjEBITDA": [47.26066999999975, 41.57185000000022, 91.86363999999958, 18.76992000000028, 62.24497999999971], "UnadjEBITDA": [46.6654300000001, 37.97660999999996, 96.70090000000003, 10.808810000000094, 57.786680000000246], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 3.568080000000009, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 1.7763568394002505e-15, 0.0, 1.7763568394002505e-15], "ProfLegal": [0.0, -3.0, -1.1555299999999997, -2.65752, -1.1575199999999999], "MgmtFees": [-0.59524, -0.59524, -0.59524, -0.59524, -0.59524], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [3.5127456499139953e-13, -2.5979218776228663e-13, 3.0199500000004442, -4.708350000000186, -2.705539999999463], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "SC": {"AdjEBITDA": [48.05524000000021, 43.205240000000096, 120.8250299999997, 48.6812999999999, 162.47939999999937], "UnadjEBITDA": [44.483800000000215, 39.280390000000025, 117.25359000000013, 44.846889999999874, 146.88801000000004], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [-5.684341886080802e-14, -5.684341886080802e-14, -2.842170943040401e-14, -2.842170943040401e-14, -2.842170943040401e-14], "Payroll": [0.0, -7.105427357601002e-15, 3.552713678800501e-15, 0.0, -7.105427357601002e-15], "ProfLegal": [8.881784197001252e-16, -8.881784197001252e-16, 0.0, -8.881784197001252e-16, -12.190010000000003], "MgmtFees": [-3.57144, -3.57144, -3.57144, -3.57144, -3.57144], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [6.039613253960852e-14, -0.35341000000000555, 4.556355293061642e-13, -0.2629699999999975, 0.17006000000070287], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "OC": {"AdjEBITDA": [-1.6091000000000002, -0.12745, -2.3651999999999997, -0.0, -0.0], "UnadjEBITDA": [-48.12858, -53.42718, -67.25464000000001, -36.520440000000015, -18.51199000000003], "OCnorm": [-46.51948, -53.29973, -64.88944000000001, -36.520440000000015, -18.51199000000003], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 0.0, 0.0, 0.0], "MgmtFees": [0.0, 0.0, 0.0, 0.0, 0.0], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [0.0, 0.0, 0.0, 0.0, 0.0], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "OP": {"AdjEBITDA": [6.66624, 8.042119999999997, 14.231489999999994, 5.351129999999999, 14.637680000000003], "UnadjEBITDA": [6.666240000000001, 8.042119999999995, 14.231489999999997, 5.351129999999998, 14.637680000000003], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 5.551115123125783e-17, 0.0, 0.0], "MgmtFees": [0.0, 0.0, 0.0, 0.0, 0.0], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [8.881784197001252e-16, -1.7763568394002505e-15, 3.497202527569243e-15, -8.881784197001252e-16, 0.0], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "FL": {"AdjEBITDA": [4.20695, 2.8837000000000037, 6.686510000000001, 2.5794800000000007, 7.680900000000001], "UnadjEBITDA": [3.6117099999999995, 2.288460000000002, 6.091270000000007, 1.9842399999999987, 7.0856600000000025], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 3.552713678800501e-15, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 0.0, 0.0, 0.0], "MgmtFees": [-0.59524, -0.59524, -0.59524, -0.59524, -0.59524], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [-4.440892098500626e-16, -1.7763568394002505e-15, 2.220446049250313e-15, -1.9984014443252818e-15, 1.3322676295501878e-15], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "MA": {"AdjEBITDA": [3.403360000000003, -1.9216200000000079, 12.515629999999978, -0.25824000000000635, 19.311919999999986], "UnadjEBITDA": [2.808119999999997, -2.5168600000000136, 11.920389999999987, -1.7604300000000048, 18.716679999999993], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 0.0, 0.0, 0.0], "MgmtFees": [-0.59524, -0.59524, -0.59524, -0.59524, -0.59524], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [-5.773159728050814e-15, -5.773159728050814e-15, 8.43769498715119e-15, -0.9069499999999984, 6.661338147750939e-15], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "CC": {"AdjEBITDA": [0.5040199999999935, 1.938440000000004, 8.975829999999998, 2.2285799999999942, 10.578549999999998], "UnadjEBITDA": [-0.09122000000000252, 1.343200000000007, 8.38059, 1.6333399999999938, 9.983309999999996], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 0.0, 0.0, 0.0], "MgmtFees": [-0.59524, -0.59524, -0.59524, -0.59524, -0.59524], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [3.9968028886505635e-15, 3.1086244689504383e-15, 1.3322676295501878e-15, -4.440892098500626e-16, -2.220446049250313e-15], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "GL": {"AdjEBITDA": [4.313079999999996, 4.203129999999998, 12.203449999999997, 0.5439299999999946, 8.682609999999999], "UnadjEBITDA": [3.7178399999999985, 3.607889999999996, 11.608210000000001, -3.0904300000000053, 8.087369999999996], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 0.0, 0.0, 0.0], "MgmtFees": [-0.59524, -0.59524, -0.59524, -0.59524, -0.59524], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [2.6645352591003757e-15, -2.220446049250313e-15, 4.884981308350689e-15, -3.03912, -2.220446049250313e-15], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "CO": {"AdjEBITDA": [-5.230430000000013, -3.0716900000000034, 53.65442000000032, -14.697840000000248, 55.661760000000044], "UnadjEBITDA": [-9.397110000000005, -18.265370000000022, 43.72603000000026, -11.475370000000016, 46.120920000000055], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [-2.842170943040401e-14, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 4.440892098500626e-16, 0.0, 0.0], "MgmtFees": [-4.1666799999999995, -4.1666799999999995, -4.1666799999999995, -4.1666799999999995, -4.1666799999999995], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [3.552713678800501e-14, -11.027000000000019, -5.761710000000065, 7.389150000000232, -5.374159999999989], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "AZ": {"AdjEBITDA": [34.393219999999744, 44.88981000000002, 95.61126000000019, 42.329420000000376, 107.78341999999978], "UnadjEBITDA": [31.417019999999766, 41.373429999999914, 92.63506000000027, 39.353220000000235, 103.22854999999976], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 8.881784197001252e-16, -1.7763568394002505e-15, 0.0, 1.7763568394002505e-15], "ProfLegal": [0.0, 0.0, 4.440892098500626e-16, 0.0, 0.0], "MgmtFees": [-2.9762, -2.9762, -2.9762, -2.9762, -2.9762], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [2.2648549702353193e-14, -0.5401800000001056, 8.08242361927114e-14, -1.4077627952246985e-13, -1.5786700000000242], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "IL": {"AdjEBITDA": [9.563759999999977, 18.934279999999987, 37.65154999999996, 17.098379999999974, 44.67160000000008], "UnadjEBITDA": [7.182799999999962, 16.553319999999992, 34.158919999999966, 14.717419999999969, 42.29064000000008], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 4.440892098500626e-16, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 2.220446049250313e-16, 0.0, 0.0], "MgmtFees": [-2.38096, -2.38096, -2.38096, -2.38096, -2.38096], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [-1.509903313490213e-14, 5.329070518200751e-15, -1.1116699999999922, -5.329070518200751e-15, -1.7763568394002505e-15], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "MN": {"AdjEBITDA": [12.733110000000009, 10.701390000000103, 36.31358999999996, 0.9900600000000314, 50.25925000000013], "UnadjEBITDA": [10.947390000000038, 8.91567000000004, 33.41422999999996, -0.7956600000000158, 48.47353000000018], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [-1.4210854715202004e-14, -1.4210854715202004e-14, -1.4210854715202004e-14, -1.4210854715202004e-14, -1.4210854715202004e-14], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 2.220446049250313e-16, 0.0, 0.0], "MgmtFees": [-1.78572, -1.78572, -1.78572, -1.78572, -1.78572], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [4.3076653355456074e-14, -4.929390229335695e-14, -1.1136399999999875, -3.2862601528904634e-14, 6.616929226765933e-14], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "NC": {"AdjEBITDA": [-0.0, -0.0, -0.0, 6.374899999999999, 6.784429999999998], "UnadjEBITDA": [0.0, 0.0, 0.0, 6.3749, 6.784429999999997], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 0.0, 0.0, 0.0], "MgmtFees": [0.0, 0.0, 0.0, 0.0, 0.0], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [0.0, 0.0, 0.0, 8.881784197001252e-16, -8.881784197001252e-16], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "NJ": {"AdjEBITDA": [-1.21484, -1.31446, -1.2248, -1.2059099999999998, -0.0], "UnadjEBITDA": [0.0, 0.0, 0.0, -0.02202, -3.5125899999999994], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.86652, 0.8538399999999999, 0.85384, 0.8538399999999999, -2.31505], "MgmtFees": [0.0, 0.0, 0.0, 0.0, 0.0], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [0.34831999999999996, 0.46062000000000003, 0.37096000000000007, 0.33004999999999995, -1.1975399999999996], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "SE": {"AdjEBITDA": [-0.0, -0.0, -3.0439999999999996, -1.165, -0.0], "UnadjEBITDA": [0.0, 0.0, -3.0439999999999996, -5.5478499999999995, -2.9667099999999995], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, 0.0, 0.0, 0.0, -1.9292099999999999], "MgmtFees": [0.0, 0.0, 0.0, 0.0, 0.0], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [0.0, 0.0, 0.0, -4.3828499999999995, -1.0374999999999996], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}, "HC": {"AdjEBITDA": [-0.0, -0.68038, -0.0, -1.32409, -0.29654], "UnadjEBITDA": [-4.312620000000038, -34.419129999999996, -3.1450000000000014, -7.575099999999999, -16.49554999999998], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [0.0, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.0, -31.83875, 0.0, 0.0, 0.0], "MgmtFees": [0.0, 0.0, 0.0, 0.0, 0.0], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [-4.312620000000038, -1.899999999999995, -3.1450000000000014, -6.251009999999999, -16.19900999999998], "CashInterest": [-709.59069, -12.04842, -11.81242, -11.629010000000001, -990.4447]}, "VP": {"AdjEBITDA": [-0.78755, -0.0, -0.0, -0.0, -0.0], "UnadjEBITDA": [-2.1147700000000005, -0.6147200000000002, -0.38312999999999997, -1.1549999999999998, 0.07812999999999981], "OCnorm": [0.0, 0.0, 0.0, 0.0, 0.0], "buckets": {"Revenue": [0.0, 0.0, 0.0, 0.0, 0.0], "Occupancy": [0.0, 0.0, 0.0, 0.0, 0.0], "Payroll": [-0.0889, 0.0, 0.0, 0.0, 0.0], "ProfLegal": [0.02998, 0.0, 0.0, 0.0, 0.0], "MgmtFees": [-0.59524, 0.0, 0.0, 0.0, 0.0], "NDF": [0.0, 0.0, 0.0, 0.0, 0.0], "FamilyReunion": [0.0, 0.0, 0.0, 0.0, 0.0]}, "Other": [-0.6730600000000005, -0.6147200000000002, -0.38312999999999997, -1.1549999999999998, 0.07812999999999981], "CashInterest": [-0.0, -0.0, -0.0, -0.0, -0.0]}}, "companies": ["TX", "SC", "OC", "OP", "FL", "MA", "CC", "GL", "CO", "AZ", "IL", "MN", "NC", "NJ", "SE", "HC", "VP"], "companyNames": {"TX": "PHX Texas (TX)", "SC": "Phenix SoCal (SC)", "OC": "Phenix OC \u2013 managed (OC)", "OP": "PHX Florida (OP)", "FL": "Phenix Kentucky (FL)", "MA": "Phenix Ohio (MA)", "CC": "Phenix Cool Creek (CC)", "GL": "Phenix Glendale (GL)", "CO": "Phenix Colorado (CO)", "AZ": "PHX Arizona (AZ)", "IL": "PHX Illinois (IL)", "MN": "PHX Minnesota (MN)", "NC": "PHX MidAtlantic (NC)", "NJ": "PHX New Jersey (NJ)", "SE": "PHX Southeast (SE)", "HC": "HC (holding)", "VP": "VP (cc 3000)"}, "sec2": {"PCS": {"UnadjEBITDA": [93.45605000000023, 50.13783000000547, 396.2939100000065, 57.127649999999285, 468.67474999999877], "CashInterest": [-709.59069, -12.04842, -11.81242, -11.629010000000001, -990.4447], "CashTaxes": [0.0, 0.0, 0.0, 0.0, 0.0], "DeltaOpAssets": [-134.44000000000005, -14.079999999999927, -143.48000000000002, 364.67999999999995, -224.26], "DeltaOpLiab": [-70.88, 107.43999999999994, 94.58000000000004, 165.80999999999995, -13.950000000000045], "OtherWC": [0.034639999997125415, -0.019410000007212602, -0.011490000006830314, 0.021359999997628165, -4.999999850952008e-05], "CFO": [-821.4200000000027, 131.42999999999827, 335.5699999999997, 576.0099999999968, -759.9799999999998], "Capex": [-490.96999999999935, 66.57000000000062, -87.32000000000153, -160.0799999999963, -124.14000000000124], "FCFbeforeFin": [-1312.3900000000021, 197.9999999999989, 248.24999999999818, 415.9300000000005, -884.120000000001], "Interco": [700.0, 250.0, 19.5, 0.0, 675.0], "Borrow": [339.26000000000204, -91.77999999999884, -38.419999999998254, -38.61000000000058, -38.779999999998836], "NetChangeCash": [-273.1300000000001, 356.22, 229.32999999999993, 377.31999999999994, -247.89999999999986], "check": [1.1368683772161603e-13, 0.0, 0.0, 0.0, 0.0]}, "PSSF": {"UnadjEBITDA": [153.75533999999993, 85.97677000000039, 79.16339000000005, -138.90262999999987, 112.91680999999998], "CashInterest": [0.91174, 0.6019000000000001, 0.5118399999999999, 0.6516699999999999, 0.17046000000000003], "CashTaxes": [0.0, 0.0, 0.0, 0.0, 0.0], "DeltaOpAssets": [-40.75, 105.66999999999985, 303.3900000000001, -32.73000000000002, -6.329999999999927], "DeltaOpLiab": [46.00999999999999, 104.90999999999985, 153.96000000000004, -452.31999999999994, -57.26999999999998], "OtherWC": [-9.247079999999869, -0.808670000000518, -0.7952300000004016, -0.009040000000140935, 0.0027299999999073066], "CFO": [150.68000000000006, 296.34999999999957, 536.2299999999998, -623.31, 49.48999999999999], "Capex": [0.0, 0.0, 0.0, 0.0, 0.0], "FCFbeforeFin": [150.68000000000006, 296.34999999999957, 536.2299999999998, -623.31, 49.48999999999999], "Interco": [-700.0, -255.39999999999964, -694.4899999999998, -0.0, -0.0], "Borrow": [0.0, 0.0, 0.0, 0.0, 0.0], "NetChangeCash": [-549.3199999999999, 40.94999999999993, -158.26, -623.31, 49.48999999999999], "check": [0.0, 0.0, 0.0, 0.0, -7.105427357601002e-15]}}};
+const svgNS = "http://www.w3.org/2000/svg";
+
+const state = { entity: "PCS", company: "ALL", period: "TOTAL" };
+
+function el(tag, attrs){
+  const e = document.createElementNS(svgNS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+function fmt(v){
+  const s = Math.abs(v) >= 1000 ? (v/1000).toFixed(2)+'M' : v.toFixed(0)+'K';
+  return (v < 0 ? '-$' : '$') + s.replace('-','');
+}
+function fmtSigned(v){
+  return (v >= 0 ? '+' : '') + fmt(v);
+}
+function wrapLabel(text, maxChars){
+  const words = text.split(' ');
+  const lines = []; let cur = '';
+  words.forEach(w=>{
+    const trial = cur ? cur+' '+w : w;
+    if(trial.length > maxChars && cur){ lines.push(cur); cur = w; } else { cur = trial; }
+  });
+  if(cur) lines.push(cur);
+  return lines;
+}
+function catLabelEl(x, yBase, cssClass, text, maxChars){
+  const lines = wrapLabel(text, maxChars);
+  const t = el('text',{x:x, y:yBase, class:cssClass, 'text-anchor':'middle'});
+  lines.forEach((line,i)=>{
+    const ts = document.createElementNS(svgNS,'tspan');
+    ts.setAttribute('x', x); ts.setAttribute('dy', i===0?0:11);
+    ts.textContent = line; t.appendChild(ts);
+  });
+  return t;
+}
+
+function pickMonthly(arr, period){
+  if(period === 'TOTAL') return arr.reduce((a,b)=>a+b,0);
+  return arr[period];
+}
+
+function sec1Source(entity, company){
+  if(entity === 'PCS' && company !== 'ALL') return RAW.sec1_company[company];
+  return RAW.sec1[entity];
+}
+
+function buildSec1Steps(entity, company, period){
+  const d = sec1Source(entity, company);
+  const val = (arr)=>pickMonthly(arr, period);
+  const adj = val(d.AdjEBITDA);
+  const unadj = val(d.UnadjEBITDA);
+  const steps = [{type:'anchor', label:'Adjusted EBITDA', value:adj}];
+  steps.push({type:'delta', label:'OC (managed locations) normalizations', value:val(d.OCnorm)});
+  const bucketLabels = {Revenue:'Revenue normalizations', Occupancy:'Occupancy / rent', Payroll:'Payroll normalizations',
+    ProfLegal:'Professional & legal fees', MgmtFees:'Management fees', NDF:'National Development Fund (net)', FamilyReunion:'Phenix family reunion (net)'};
+  ['Revenue','Occupancy','Payroll','ProfLegal','MgmtFees','NDF','FamilyReunion'].forEach(b=>{
+    steps.push({type:'delta', label:bucketLabels[b], value:val(d.buckets[b])});
+  });
+  steps.push({type:'delta', label:'Other cost & income normalizations', value:val(d.Other)});
+  steps.push({type:'anchor', label:'Unadjusted EBITDA', value:unadj});
+  return steps;
+}
+
+function buildSec2Steps(entity, company, period){
+  if(company !== 'ALL') return null;
+  if(entity !== 'PCS' && entity !== 'PSSF') return null;
+  const d = RAW.sec2[entity];
+  const val = (arr)=>pickMonthly(arr, period);
+  const steps = [{type:'anchor', label:'Unadjusted EBITDA (cash basis)', value:val(d.UnadjEBITDA)}];
+  steps.push({type:'delta', label:'Cash interest, net', value:val(d.CashInterest)});
+  steps.push({type:'delta', label:'Cash taxes', value:val(d.CashTaxes)});
+  steps.push({type:'delta', label:'Δ Operating assets (AR, prepaids)', value:val(d.DeltaOpAssets)});
+  steps.push({type:'delta', label:'Δ Operating liabilities (AP, accruals)', value:val(d.DeltaOpLiab)});
+  steps.push({type:'delta', label:'Other working capital / non-cash', value:val(d.OtherWC)});
+  steps.push({type:'anchor', label:'Cash flow from operations', value:val(d.CFO)});
+  steps.push({type:'delta', label:'Capital expenditure / investing, net', value:val(d.Capex)});
+  steps.push({type:'anchor', label:'Free cash flow before financing', value:val(d.FCFbeforeFin)});
+  steps.push({type:'delta', label:'Intercompany funding', value:val(d.Interco)});
+  steps.push({type:'delta', label:'Net borrowing / (repayment)', value:val(d.Borrow)});
+  steps.push({type:'anchor', label:'NET CHANGE IN CASH', value:val(d.NetChangeCash)});
+  return steps;
+}
+
+function renderWaterfall(svgId, steps){
+  const svg = document.getElementById(svgId);
+  svg.innerHTML = '';
+  const n = steps.length;
+  const W = 1120, marginLeft = 56, marginRight = 16, marginTop = 30, marginBottom = 86;
+  const plotW = W - marginLeft - marginRight;
+  const barGap = 10;
+  const barW = (plotW / n) - barGap;
+  const catBandW = plotW / n;
+
+  let running = null;
+  const spans = [];
+  steps.forEach(s=>{
+    if(s.type === 'anchor'){
+      spans.push({lo:0, hi:s.value, ...s});
+      running = s.value;
+    } else {
+      const lo = running, hi = running + s.value;
+      spans.push({lo:Math.min(lo,hi), hi:Math.max(lo,hi), signLo:lo, signHi:hi, ...s});
+      running = hi;
+    }
+  });
+
+  let minV = 0, maxV = 0;
+  spans.forEach(sp=>{ minV = Math.min(minV, sp.lo, sp.hi); maxV = Math.max(maxV, sp.lo, sp.hi); });
+  const pad = (maxV - minV) * 0.12 || 1;
+  minV -= pad; maxV += pad;
+  const H = 400;
+  const plotTop = marginTop, plotBottom = H - marginBottom;
+  const plotH = plotBottom - plotTop;
+  const yScale = v => plotBottom - ((v - minV) / (maxV - minV)) * plotH;
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const zeroY = yScale(0);
+  svg.appendChild(el('line',{x1:marginLeft, x2:W-marginRight, y1:zeroY, y2:zeroY, class:'axis-line'}));
+
+  spans.forEach((sp,i)=>{
+    const x = marginLeft + i*catBandW + (catBandW-barW)/2;
+    const yTop = yScale(sp.hi), yBot = yScale(sp.lo);
+    const h = Math.max(Math.abs(yBot-yTop), 1.2);
+    const isAnchor = sp.type === 'anchor';
+    const isZero = Math.abs(sp.value) < 0.005;
+    let cls = 'bar ';
+    if(isAnchor) cls += 'anchor';
+    else if(isZero) cls += 'zero';
+    else cls += (sp.value >= 0 ? 'pos' : 'neg');
+    const rect = el('rect',{x:x, y:Math.min(yTop,yBot), width:barW, height:h, class:cls, rx:2});
+    rect.addEventListener('mouseenter', (ev)=>showTip(ev, sp));
+    rect.addEventListener('mousemove', (ev)=>moveTip(ev));
+    rect.addEventListener('mouseleave', hideTip);
+    svg.appendChild(rect);
+
+    if(i < spans.length-1){
+      const nx = marginLeft + (i+1)*catBandW + (catBandW-barW)/2;
+      const connY = yScale(sp.hi);
+      svg.appendChild(el('line',{x1:x+barW, x2:nx, y1:connY, y2:connY, class:'connector'}));
+    }
+
+    const labelY = sp.value>=0 || isAnchor ? Math.min(yTop,yBot)-6 : Math.max(yTop,yBot)+14;
+    const vl = el('text',{x:x+barW/2, y:labelY, class:'val-label '+(isAnchor?'anchor':(isZero?'':(sp.value>=0?'pos':'neg'))), 'text-anchor':'middle'});
+    vl.textContent = isAnchor ? fmt(sp.value) : fmtSigned(sp.value);
+    svg.appendChild(vl);
+
+    const maxChars = Math.max(6, Math.floor(catBandW/6.0));
+    const cl = catLabelEl(x+barW/2, plotBottom+16, 'cat-label'+(isZero?' zero':''), sp.label, maxChars);
+    svg.appendChild(cl);
+  });
+}
+
+function showTip(ev, sp){
+  const tip = document.getElementById('tooltip');
+  tip.innerHTML = '<strong>'+sp.label+'</strong><br>'+(sp.type==='anchor'?fmt(sp.value):fmtSigned(sp.value));
+  tip.style.opacity = 1;
+  moveTip(ev);
+}
+function moveTip(ev){
+  const tip = document.getElementById('tooltip');
+  tip.style.left = (ev.pageX + 12) + 'px';
+  tip.style.top = (ev.pageY - 10) + 'px';
+}
+function hideTip(){ document.getElementById('tooltip').style.opacity = 0; }
+
+function periodLabel(period){
+  if(period === 'TOTAL') return "Jan–May '26 Total";
+  return RAW.months[period] + " '26";
+}
+
+function populateCompanySelect(){
+  const sel = document.getElementById('companySelect');
+  sel.innerHTML = '';
+  const optAll = document.createElement('option');
+  optAll.value = 'ALL'; optAll.textContent = 'All companies';
+  sel.appendChild(optAll);
+  RAW.companies.forEach(code=>{
+    const o = document.createElement('option');
+    o.value = code; o.textContent = RAW.companyNames[code];
+    sel.appendChild(o);
+  });
+}
+
+function render(){
+  const entity = state.entity, period = state.period;
+  const companyGroup = document.getElementById('companyGroup');
+  const companySelect = document.getElementById('companySelect');
+
+  if(entity !== 'PCS' && state.company !== 'ALL'){ state.company = 'ALL'; }
+  companySelect.value = state.company;
+  companySelect.disabled = (entity !== 'PCS');
+  companyGroup.classList.toggle('disabled', entity !== 'PCS');
+
+  document.querySelectorAll('#entityPills .pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.entity === entity);
+  });
+
+  const sec1Steps = buildSec1Steps(entity, state.company, period);
+  renderWaterfall('chart1', sec1Steps);
+
+  const adjV = sec1Steps[0].value;
+  const unadjV = sec1Steps[sec1Steps.length-1].value;
+  document.getElementById('kpiAdj').textContent = fmt(adjV);
+  document.getElementById('kpiUnadj').textContent = fmt(unadjV);
+  let scopeLabel = entity === 'ALL' ? 'PCS + PSSF + GP' : entity;
+  if(entity === 'PCS' && state.company !== 'ALL') scopeLabel = RAW.companyNames[state.company];
+  document.getElementById('kpiScope').textContent = scopeLabel + ' · ' + periodLabel(period);
+
+  const sec2Steps = buildSec2Steps(entity, state.company, period);
+  const naBox = document.getElementById('section2na');
+  const chartWrap = document.getElementById('section2chartWrap');
+  const cashKpi = document.getElementById('kpiCash');
+  const cashKpiSub = document.getElementById('kpiCashSub');
+
+  if(sec2Steps){
+    naBox.style.display = 'none';
+    chartWrap.style.display = '';
+    renderWaterfall('chart2', sec2Steps);
+    const cashV = sec2Steps[sec2Steps.length-1].value;
+    cashKpi.textContent = fmt(cashV);
+    cashKpi.className = 'val ' + (cashV >= 0 ? 'pos' : 'neg');
+    cashKpiSub.textContent = periodLabel(period) + ' · per uploaded balance sheet';
+  } else {
+    chartWrap.style.display = 'none';
+    naBox.style.display = '';
+    if(entity === 'PCS' && state.company !== 'ALL'){
+      naBox.textContent = "Cash walk not available when drilling into a single company — the uploaded balance sheets are consolidated for PCS and can't be split by company. Set Company back to All companies to see the cash bridge.";
+    } else if(entity === 'GP'){
+      naBox.textContent = "Cash walk not available for GP (Gina's Platform) — no balance sheet has been loaded for this entity; the EBITDA leg above is unaffected.";
+    } else {
+      naBox.textContent = "Cash walk not available for “All companies” — balance sheets are consolidated per entity and mix PCS's 5-month window with PSSF's 4-month window, so they are not combined here. Select PCS or PSSF to see the cash bridge.";
+    }
+    cashKpi.textContent = 'n/a';
+    cashKpi.className = 'val';
+    cashKpiSub.textContent = 'select PCS or PSSF, All companies';
+  }
+
+  const footer = document.getElementById('footerNote');
+  footer.textContent = "Prototype — illustrative structure for the PE board dashboard concept, built from the workbook's new “EBITDA to FCF Bridge” tab. Section 1 (Adjusted → Unadjusted EBITDA) is computed live from the Adjusted TB and Unadjusted TB by GT category and Co-tag (matching the tab's own engine) for any of PCS / PSSF / GP / All companies, and now also by individual PCS company (Co code) via the Company filter — matching the tab's own Company (E3) drop-down, including the “Phenix OC – managed (OC)” line. All variants are cross-checked against the tab's cached monthly and Jan–May Total values to the cent, and the 17 listed PCS companies sum exactly to the PCS entity total. Section 2 (Unadjusted EBITDA → Free Cash Flow) uses the month-end balance sheet deltas sourced in the tab (PCS: 'Balance Sheet CY (BU)(PY)(PP) PYE (VA)_36469_260706_120900.xlsx', Dec 2025–May 2026; PSSF: 'Phenix Salon Suites Franchising_Balance Sheet Comparison.xlsx'); it is only shown for PCS or PSSF with Company set to All companies, matching the source tab's own logic (balance sheets aren't split by company). PSSF's Jan-26 column relies on the same Dec-25 opening balance the source tab flags as an approximation — the source notes state PSSF's reliable, balance-sheet-tied total covers Feb–May '26 (−$691.1K); the Jan-inclusive 5-month total shown here for reference is −$1,240.4K. GP has no balance sheet loaded (cash leg n/a); All companies combines PCS+PSSF+GP EBITDA but has no combined cash walk. Snapshot as of P5 2026 (May actuals) — static export, not yet wired to live formulas.";
+}
+
+document.getElementById('entityPills').addEventListener('click', (e)=>{
+  const pill = e.target.closest('.pill');
+  if(!pill) return;
+  state.entity = pill.dataset.entity;
+  if(state.entity !== 'PCS') state.company = 'ALL';
+  render();
+});
+document.getElementById('companySelect').addEventListener('change', (e)=>{
+  state.company = e.target.value;
+  render();
+});
+document.getElementById('periodSelect').addEventListener('change', (e)=>{
+  state.period = e.target.value === 'TOTAL' ? 'TOTAL' : Number(e.target.value);
+  render();
+});
+document.getElementById('resetLink').addEventListener('click', ()=>{
+  state.entity = 'PCS'; state.company = 'ALL'; state.period = 'TOTAL';
+  document.getElementById('periodSelect').value = 'TOTAL';
+  render();
+});
+
+populateCompanySelect();
+render();
+</script>
+</body>
+</html>
