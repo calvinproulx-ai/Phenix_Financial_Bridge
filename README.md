@@ -1,6 +1,6 @@
-# Phenix 1929 Holdings — EBITDA to FCF Bridge
+# Phenix 1929 Holdings — Driver Dashboard
 
-Single-file, self-contained HTML dashboard. All source data (Adjusted TB / Unadjusted TB category breakdowns, PCS company-level splits, and PCS/PSSF balance-sheet cash walks) is embedded directly in `index.html` as a JSON blob — no build step, no external requests, no CDN dependencies. It renders entirely with vanilla JS/SVG.
+Single-file, self-contained HTML dashboard, sourced from the final Phenix1929_Consolidated P&L workbook. All data is embedded directly in `index.html` as a JSON blob — no build step, no external requests, no CDN dependencies. Renders entirely with vanilla JS/SVG, with a left-hand sidebar for navigating between three pages.
 
 ## View it locally
 
@@ -13,7 +13,7 @@ Just double-click `index.html`, or open it in any browser.
    ```
    git init
    git add index.html
-   git commit -m "Add EBITDA to FCF bridge dashboard"
+   git commit -m "Phenix driver dashboard"
    git branch -M main
    git remote add origin https://github.com/<your-username>/<your-repo>.git
    git push -u origin main
@@ -26,6 +26,15 @@ Any time you want to refresh the numbers, regenerate `index.html` and push again
 
 ## What's in the file
 
-- **Section 1 — Adjusted EBITDA → Unadjusted EBITDA**: live category/Co-tag breakdown from the Adjusted TB and Unadjusted TB, filterable by Entity (PCS / PSSF / GP / All companies) and, for PCS, by individual operating Company.
-- **Section 2 — Unadjusted EBITDA → Free Cash Flow**: month-end balance-sheet-driven cash walk for PCS and PSSF only (not available for GP or when a single PCS company is selected, matching the source workbook's own logic).
-- Entity pills, Company dropdown, and a Period selector (month or Jan–May '26 total) all recompute both charts client-side from the embedded data — no server needed.
+Three pages, selectable from the left sidebar, all "Adjusted" results:
+
+- **EBITDA → Cash Flow**: Adjusted EBITDA → Unadjusted EBITDA → Free Cash Flow walk, including the balance-sheet-driven cash bridge (capex split into maintenance/other vs. acquisitions) and a cumulative cash-balance trend. Filterable by Entity (PCS / PSSF / GP / All companies) and, for PCS, by individual operating Company.
+- **Actual → Proforma**: forward- and backward-looking EBITDA bridges across all 6 comparison modes from the workbook's Bridge Deep-Dive tab (FY Budget→Forecast, LTM YoY, LTM P3→P5, Vintage Budget→Forecast, YTD Actual→FY Forecast, LTM P5→P12). Filterable by Entity, vintage Cohort, and — in Vintage mode — individual Cost Center.
+- **Budget → Actual**: Jan–May 2026 actual-vs-budget EBITDA bridge with a full category-by-cohort breakdown table.
+
+All charts/tables/filters recompute client-side from the embedded data — no server needed.
+
+## Data notes / known divergences from the source workbook
+
+- **All-companies cash walk** (EBITDA → Cash Flow page): the workbook's own "All companies" cash formulas don't net every line (e.g. intercompany funding), so this figure is built by summing PCS's and PSSF's independently-validated cash walks line-by-line instead.
+- **Corp/Other cohort** (Budget → Actual page): the source tab's own Corp/Other column always computes to 0 across every named cost category because of a redundant filter condition in its formula, and dumps the true amount into a single catch-all bucket instead. This dashboard shows the true per-category split where derivable, with the remainder in an "Other / unclassified" row, so every column always reconciles exactly to that cohort's actual EBITDA change.
