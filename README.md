@@ -38,6 +38,10 @@ The three comparison pages are sourced live (by cost category, Entity, and vinta
 
 A "Print / Save PDF" button in the masthead prints the currently open page in a clean, board-ready layout (sidebar and filters are hidden automatically).
 
+On the three comparison pages (Actual v. Prior Year / Actual → Forecast / Actual v. Budget), selecting a specific vintage cohort under Entity=PCS shows a chip list of the individual cost centers (locations) included in that cohort, right below the filter bar.
+
+The Phenix Salon Suites logo is embedded in both the sidebar (inverted to white) and the masthead (original black), extracted as vector artwork straight from the uploaded `.ai` file so it stays crisp at any size.
+
 ## Data notes / known divergences from the source workbook
 
 - **All-companies cash walk** (EBITDA → Cash Flow page): the workbook's own "All companies" cash formulas don't net every line (e.g. intercompany funding), so this figure is built by summing PCS's and PSSF's independently-validated cash walks line-by-line instead.
