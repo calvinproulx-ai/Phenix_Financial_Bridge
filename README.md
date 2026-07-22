@@ -26,9 +26,10 @@ Any time you want to refresh the numbers, regenerate `index.html` and push again
 
 ## What's in the file
 
-Six pages, selectable from the left sidebar, all "Adjusted" results unless noted:
+Seven pages, selectable from the left sidebar, all "Adjusted" results unless noted:
 
 - **EBITDA → Cash Flow**: Adjusted EBITDA → Unadjusted EBITDA → Free Cash Flow walk, including the balance-sheet-driven cash bridge (capex split into maintenance/other vs. acquisitions) and a cumulative cash-balance trend with 2026 Budget and Budget + Revised Proforma overlay lines. Filterable by Entity (PCS / PSSF / GP / All companies) and, for PCS, by individual operating Company.
+- **Weekly Cash Balance**: a faster-moving, week-by-week complement to the page above — actual weekly cash balance (Consolidated / PCS / PSSF) through the latest reconciled week, plus a rolling forecast out to mid-January 2027 driven by revenue/expense/capex/debt-service run-rate assumptions. Includes a table of upcoming forecast weeks. Sourced from the "Weekly Cash Summary" tracker, which is updated weekly from bank activity — independent of, and on a different cadence than, the monthly Adjusted TB used everywhere else in this dashboard.
 - **Actual v. Prior Year**: LTM / PTD / YTD sub-tabs comparing current-year Adjusted EBITDA to the same period last year.
 - **Actual → Forecast**: YTD / LTM sub-tabs bridging where the business stands today to the full-year 2026 outlook.
 - **Actual v. Budget**: PTD / YTD / LTM sub-tabs comparing Adjusted EBITDA to the approved plan. The YTD view also includes a full category-by-cohort breakdown table.
